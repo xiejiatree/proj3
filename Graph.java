@@ -1,8 +1,10 @@
 import java.io.*;
 import java.util.*;
+import java.nio.file.*;
+import java.util.stream.*;
 
-public class Graph{
-    
+public class Graph {
+
     private Map<Node, List<Node>> adjNodes;
     private List<Edge> edges;
     private List<Node> nodes;
@@ -38,14 +40,14 @@ public class Graph{
         return nodes;
     }
 
-    public double getWeight(Node node1, Node node2){
-        for(Edge edge: edges){
-            if(edge.getNode1().equals(node1)||
-                edge.getNode1().equals(node2)||
-                edge.getNode2().equals(node1)||
-                edge.getNode2().equals(node2)){
-                    return edge.getWeight();
-                }
+    public double getWeight(Node node1, Node node2) {
+        for (Edge edge : edges) {
+            if (edge.getNode1().equals(node1) ||
+                    edge.getNode1().equals(node2) ||
+                    edge.getNode2().equals(node1) ||
+                    edge.getNode2().equals(node2)) {
+                return edge.getWeight();
+            }
         }
         return -1.0;
     }
@@ -75,52 +77,67 @@ public class Graph{
         return zero;
 
     }
-    //returns a graph. 
+
+    // returns a graph.
+
     static Graph readData(String fileName) throws IOException {
-        List<Node> nodes = new ArrayList<>();
+        Map<String, Node> nodes = new HashMap<>();
         List<Edge> edges = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-            String s;
-            while ((s = reader.readLine()) != null) {
-                String[] data = s.split("\t");
-                if (data[0].equals("i")) {
-                    String id = data[1];
-                    double latitude = Double.parseDouble(data[2]);
-                    double longitude = Double.parseDouble(data[3]);
-                    Node node = new Node(id, latitude, longitude);
-                    nodes.add(node);
-                } else if (data[0].equals("r")) {
-                    String id = data[1];
-                    String startNodeId = data[2];
-                    String endNodeId = data[3];
-                    Node startNode = getNodeById(nodes, startNodeId, id, true);
-                    Node endNode = getNodeById(nodes, endNodeId, id, false);
-                    Edge edge = new Edge(startNode, endNode, id);
-                    edges.add(edge);
-                }
+
+        try {
+            // Process nodes
+            try (Stream<String> nodeLines = Files.lines(Paths.get(fileName))) {
+                nodeLines.filter(line -> line.startsWith("i"))
+                        .forEach(line -> {
+                            String[] data = line.split("\t");
+                            String id = data[1];
+                            double latitude = Double.parseDouble(data[2]);
+                            double longitude = Double.parseDouble(data[3]);
+                            Node node = new Node(id, latitude, longitude);
+                            nodes.put(id, node);
+                        });
             }
-        } 
-        catch (IOException e){
+
+            // Process edges
+            try (Stream<String> edgeLines = Files.lines(Paths.get(fileName))) {
+                edgeLines.filter(line -> line.startsWith("r"))
+                        .forEach(line -> {
+                            String[] data = line.split("\t");
+                            String id = data[1];
+                            String startNodeId = data[2];
+                            String endNodeId = data[3];
+
+                            Node startNode = nodes.get(startNodeId);
+                            Node endNode = nodes.get(endNodeId);
+
+                            if (startNode != null && endNode != null) {
+                                Edge edge = new Edge(startNode, endNode, id);
+                                edges.add(edge);
+                            }
+                        });
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        Graph g = new Graph(nodes, edges);
+
+        Graph g = new Graph(new ArrayList<>(nodes.values()), edges);
         return g;
     }
 
-    public double getSmallestx(){
+    public double getSmallestx() {
         double min = nodes.get(0).getLatitude();
-        for(Node n: nodes){
-            if(n.getLatitude()<min){
+        for (Node n : nodes) {
+            if (n.getLatitude() < min) {
                 min = n.getLatitude();
             }
         }
         return min;
     }
 
-    public double getSmallesty(){
+    public double getSmallesty() {
         double min = nodes.get(0).getLongitude();
-        for(Node n: nodes){
-            if(n.getLongitude()<min){
+        for (Node n : nodes) {
+            if (n.getLongitude() < min) {
                 min = n.getLongitude();
             }
         }
@@ -132,52 +149,52 @@ public class Graph{
         Map<Node, Node> previous = new HashMap<>();
         Map<Node, Boolean> visited = new HashMap<>();
         PriorityQueue<Node> pq = new PriorityQueue<>(Comparator.comparingDouble(distance::get));
-    
+
         // Initialize all distances to infinity and visited to false
         for (Node node : graph.getNodes()) {
             distance.put(node, Double.POSITIVE_INFINITY);
             visited.put(node, false);
         }
-    
+
         // Distance from source to itself is 0
         distance.put(source, 0.0);
-    
+
         // Add source node to priority queue
         pq.offer(source);
-    
+
         while (!pq.isEmpty()) {
             Node curr = pq.poll();
-    
+
             // If destination is reached, print path and return
             if (curr == destination) {
                 List<Node> path = new ArrayList<>();
                 Node temp = destination;
                 double totalWeight = 0;
-    
+
                 while (temp != null) {
                     path.add(temp);
                     Node prev = previous.get(temp);
-    
+
                     if (prev != null) {
                         totalWeight += graph.getWeight(prev, temp);
                     }
-    
+
                     temp = prev;
                 }
-    
+
                 Collections.reverse(path);
                 System.out.println("Path: " + path);
                 System.out.println("Total weight: " + totalWeight);
                 return;
             }
-    
+
             if (!visited.get(curr)) {
                 visited.put(curr, true);
-    
+
                 for (Node neighbor : graph.getAdjacentNodes(curr)) {
                     double edgeWeight = graph.getWeight(curr, neighbor);
                     double alt = distance.get(curr) + edgeWeight;
-    
+
                     if (alt < distance.get(neighbor)) {
                         distance.put(neighbor, alt);
                         previous.put(neighbor, curr);
@@ -186,13 +203,8 @@ public class Graph{
                 }
             }
         }
-    
+
         System.out.println("No path found from " + source + " to " + destination);
     }
-    
+
 }
-
-
-
-
-
