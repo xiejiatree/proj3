@@ -53,7 +53,8 @@ public class App {
 
     }
 
-    private class ZoomableJPanel extends JPanel implements MouseWheelListener, MouseListener, MouseMotionListener {
+    private class ZoomableJPanel extends JPanel
+            implements MouseWheelListener, MouseListener, MouseMotionListener, ComponentListener {
 
         /*
          * A JPanel that can be zoomed in and out and dragged around.
@@ -65,16 +66,20 @@ public class App {
         private Point lastMousePoint;
         private List<Node> nodes;
         private List<Edge> edges;
-        private double offsetX = 43.125214;
-        private double offsetY = -77.632098;
+        private double offsetX;
+        private double offsetY;
+        private double scaleX;
+        private double scaleY;
         private double scaleFactor = 100000;
 
         public ZoomableJPanel(Graph graph) {
             this.scale = 1.0;
             this.translateX = 0;
             this.translateY = 0;
+            this.scaleX = 1.0;
+            this.scaleY = 1.0;
+
             this.lastMousePoint = null;
-            setBackground(new Color(102, 204, 102));
 
             this.nodes = graph.getNodes();
             this.edges = graph.getEdges();
@@ -82,6 +87,11 @@ public class App {
             addMouseWheelListener(this);
             addMouseListener(this);
             addMouseMotionListener(this);
+
+            this.offsetX = graph.getSmallestx();
+            this.offsetY = graph.getSmallesty();
+
+            setBackground(new Color(102, 204, 102));
         }
 
         @Override
@@ -91,7 +101,7 @@ public class App {
 
             AffineTransform at = new AffineTransform();
             at.translate(translateX, translateY);
-            at.scale(scale, scale);
+            at.scale(scale * scaleX, scale * scaleY);
             g2d.setTransform(at);
 
             for (Node node : nodes) {
@@ -125,6 +135,7 @@ public class App {
             int y2 = (int) ((edge.getNode2().getLongitude() - offsetY) * scaleFactor);
 
             g2d.drawLine(x1, y1, x2, y2);
+
         }
 
         @Override
@@ -202,6 +213,31 @@ public class App {
 
         @Override
         public void mouseMoved(MouseEvent e) {
+        }
+
+        @Override
+        public void componentResized(ComponentEvent e) {
+            int oldWidth = getWidth();
+            int oldHeight = getHeight();
+            int newWidth = e.getComponent().getWidth();
+            int newHeight = e.getComponent().getHeight();
+
+            scaleX *= (double) newWidth / oldWidth;
+            scaleY *= (double) newHeight / oldHeight;
+
+            repaint();
+        }
+
+        @Override
+        public void componentMoved(ComponentEvent e) {
+        }
+
+        @Override
+        public void componentShown(ComponentEvent e) {
+        }
+
+        @Override
+        public void componentHidden(ComponentEvent e) {
         }
 
     }
