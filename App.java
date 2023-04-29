@@ -41,49 +41,6 @@ public class App {
          * Creates the GUI and displays it. For thread safety, this method should be
          * invoked from the event-dispatching thread.
          */
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.AffineTransform;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
-import java.util.List;
-
-public class App {
-    private int windowHeight;
-    private int windowWidth;
-    private String windowTitle;
-    private Graph graph;
-
-    public App(String configPath, Graph graph) {
-        loadSettings(configPath);
-        this.graph = graph;
-    }
-
-    private void loadSettings(String configPath) {
-        /*
-         * Loads settings from a config file. The config file is a .properties file.
-         */
-
-        Properties properties = new Properties();
-        try (FileInputStream in = new FileInputStream(configPath)) {
-            properties.load(in);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        windowHeight = Integer.parseInt(properties.getProperty("windowHeight"));
-        windowWidth = Integer.parseInt(properties.getProperty("windowWidth"));
-        windowTitle = properties.getProperty("windowTitle");
-
-    }
-
-    public void createAndShowGUI() {
-        /*
-         * Creates the GUI and displays it. For thread safety, this method should be
-         * invoked from the event-dispatching thread.
-         */
 
         JFrame frame = new JFrame(windowTitle);
         frame.setSize(windowWidth, windowHeight);
@@ -127,14 +84,11 @@ public class App {
         private List<Edge> edges; // The edges of the graph
 
         public ZoomableJPanel(Graph graph) {
-            this.translateX = 0;
-            this.translateY = 0;
+            graphSpecificSettings(graph.getFileName());
             this.lastMousePoint = null;
 
-            this.zoomScale = 1;
-
-            this.offsetX = graph.getSmallestx();
-            this.offsetY = graph.getSmallesty();
+            this.offsetX = graph.getSmallestX();
+            this.offsetY = graph.getSmallestY();
 
             this.scaleX = 1.0;
             this.scaleY = 1.0;
@@ -148,6 +102,36 @@ public class App {
             addComponentListener(this);
 
             setBackground(new Color(102, 204, 102));
+        }
+
+        private void graphSpecificSettings(String fileName) {
+            /*
+             * Sets the zoom and translation settings for each graph to make it look good.
+             */
+
+            switch (fileName) {
+                case "ur.txt":
+                    this.translateX = 138;
+                    this.translateY = 399;
+                    this.zoomScale = 1.6105100000000008;
+                    break;
+                case "monroe.txt":
+                    this.translateX = -20;
+                    this.translateY = 331;
+                    this.zoomScale = 0.022094928152179918;
+                    break;
+                case "nys.txt":
+                    this.translateX = -37;
+                    this.translateY = 301;
+                    this.zoomScale = 0.001853884953141781;
+                    break;
+                default:
+                    this.translateX = 0;
+                    this.translateY = 0;
+                    this.zoomScale = 1;
+                    break;
+            }
+
         }
 
         // DRAWING METHODS
@@ -197,10 +181,10 @@ public class App {
             g2d.setColor(new Color(245, 245, 245));
             g2d.setStroke(new BasicStroke(2));
 
-            int x1 = (int) ((edge.getNode1().getLatitude() - offsetX) * coordinateMultiplier);
-            int y1 = (int) ((edge.getNode1().getLongitude() - offsetY) * coordinateMultiplier);
-            int x2 = (int) ((edge.getNode2().getLatitude() - offsetX) * coordinateMultiplier);
-            int y2 = (int) ((edge.getNode2().getLongitude() - offsetY) * coordinateMultiplier);
+            int x1 = (int) ((edge.getStart().getLatitude() - offsetX) * coordinateMultiplier);
+            int y1 = (int) ((edge.getStart().getLongitude() - offsetY) * coordinateMultiplier);
+            int x2 = (int) ((edge.getEnd().getLatitude() - offsetX) * coordinateMultiplier);
+            int y2 = (int) ((edge.getEnd().getLongitude() - offsetY) * coordinateMultiplier);
 
             g2d.drawLine(x1, y1, x2, y2);
 

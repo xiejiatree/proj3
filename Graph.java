@@ -8,81 +8,14 @@ public class Graph {
     private Map<Node, List<Node>> adjNodes;
     private List<Edge> edges;
     private List<Node> nodes;
+    private String fileName;
 
-    public Graph(List<Node> n, List<Edge> e) {
-        adjNodes = new HashMap<>();
-        nodes = n;
-        edges = e;
+    public Graph(String fileName) {
+        this.fileName = fileName;
 
-        // add all nodes to the graph
-        for (Node node : nodes) {
-            adjNodes.put(node, new ArrayList<>());
-        }
-        // add all adjacent nodes
-        for (Edge edge : edges) {
-            Node node1 = edge.getNode1();
-            Node node2 = edge.getNode2();
-
-            adjNodes.get(node1).add(node2);
-            adjNodes.get(node2).add(node1);
-        }
-    }
-
-    public List<Node> getAdjacentNodes(Node node) {
-        return adjNodes.get(node);
-    }
-
-    public List<Edge> getEdges() {
-        return edges;
-    }
-
-    public List<Node> getNodes() {
-        return nodes;
-    }
-
-    public double getWeight(Node node1, Node node2) {
-        for (Edge edge : edges) {
-            if (edge.getNode1().equals(node1) ||
-                    edge.getNode1().equals(node2) ||
-                    edge.getNode2().equals(node1) ||
-                    edge.getNode2().equals(node2)) {
-                return edge.getWeight();
-            }
-        }
-        return -1.0;
-    }
-
-    static Node getNodeById(List<Node> nodes, String nodeID, String roadID, boolean start) {
-        for (Node n : nodes) {
-            if (n.getID().equals(nodeID)) {
-                return n;
-            }
-        }
-        if (start) {
-            System.out.println("Failed to find correct start Node for road " + roadID);
-        } else if (!start) {
-            System.out.println("Failed to find correct end Node for road " + roadID);
-        }
-        return nodes.get(0);
-    }
-
-    public Node getNodeById(String nodeID) {
-        Node zero = nodes.get(0);
-        for (Node n : nodes) {
-            if (n.getID().equals(nodeID)) {
-                return n;
-            }
-        }
-        System.out.println("NO NODE OF THIS NAME EXISTS");
-        return zero;
-
-    }
-
-    // returns a graph.
-
-    static Graph readData(String fileName) throws IOException {
         Map<String, Node> nodes = new HashMap<>();
         List<Edge> edges = new ArrayList<>();
+        adjNodes = new HashMap<>();
 
         try {
             // Process nodes
@@ -120,11 +53,23 @@ public class Graph {
             e.printStackTrace();
         }
 
-        Graph g = new Graph(new ArrayList<>(nodes.values()), edges);
-        return g;
+        this.nodes = new ArrayList<>(nodes.values());
+        this.edges = edges;
+
     }
 
-    public double getSmallestx() {
+    public Node getNodeById(String id) {
+        for (Node node : nodes) {
+            if (node.getID().equals(id)) {
+                return node;
+            }
+        }
+        System.out.println("NO NODE OF THIS NAME EXISTS");
+        return null;
+
+    }
+
+    public double getSmallestX() {
         double min = nodes.get(0).getLatitude();
         for (Node n : nodes) {
             if (n.getLatitude() < min) {
@@ -134,7 +79,7 @@ public class Graph {
         return min;
     }
 
-    public double getSmallesty() {
+    public double getSmallestY() {
         double min = nodes.get(0).getLongitude();
         for (Node n : nodes) {
             if (n.getLongitude() < min) {
@@ -142,6 +87,36 @@ public class Graph {
             }
         }
         return min;
+    }
+
+    public List<Node> getAdjacentNodes(Node node) {
+        return adjNodes.get(node);
+    }
+
+    public List<Edge> getEdges() {
+        return edges;
+    }
+
+    public List<Node> getNodes() {
+        return nodes;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String FileName) {
+        this.fileName = FileName;
+    }
+
+    private Edge getEdge(Node start, Node end) {
+        for (Edge edge : edges) {
+            if (edge.getStart().equals(start) && edge.getEnd().equals(end) ||
+                    edge.getStart().equals(end) && edge.getEnd().equals(start)) {
+                return edge;
+            }
+        }
+        return null;
     }
 
     public void dijkstra(Graph graph, Node source, Node destination) {
@@ -176,15 +151,15 @@ public class Graph {
                     Node prev = previous.get(temp);
 
                     if (prev != null) {
-                        totalWeight += graph.getWeight(prev, temp);
+                        totalWeight += graph.getEdge(prev, temp).getWeight();
                     }
 
                     temp = prev;
                 }
 
                 Collections.reverse(path);
-                for(Node n: path){
-                    System.out.print(n.getID()+ " ");
+                for (Node n : path) {
+                    System.out.print(n.getID() + " ");
                 }
                 System.out.println("Distance travelled: " + totalWeight + " miles");
                 return;
@@ -192,9 +167,9 @@ public class Graph {
 
             if (!visited.get(curr)) {
                 visited.put(curr, true);
-                //edge relaxation. 
+                // edge relaxation.
                 for (Node neighbor : graph.getAdjacentNodes(curr)) {
-                    double edgeWeight = graph.getWeight(curr, neighbor);
+                    double edgeWeight = graph.getEdge(curr, neighbor).getWeight();
                     double alt = distance.get(curr) + edgeWeight;
 
                     if (alt < distance.get(neighbor)) {

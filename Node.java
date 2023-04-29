@@ -1,21 +1,20 @@
-import java.util.*;
 public class Node {
-    String ID; // name from txt file
-    double latitude; // latitude and longitude
-    double longitude;
+    private String id;
+    private double latitude;
+    private double longitude;
 
-    public Node(String i, double x, double y) {
-        this.ID = i;
-        this.latitude = x;
-        this.longitude = y;
+    public Node(String id, double latitude, double longitude) {
+        this.id = id;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public String getID() {
-        return ID;
+        return id;
     }
 
-    public void setID(String iD) {
-        ID = iD;
+    public void setID(String id) {
+        this.id = id;
     }
 
     public double getLatitude() {
@@ -34,4 +33,3 @@ public class Node {
         this.longitude = longitude;
     }
 }
-

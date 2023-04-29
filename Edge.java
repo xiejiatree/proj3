@@ -1,35 +1,43 @@
 import java.lang.Math;
+
 public class Edge {
-    Node node1;
-    Node node2;
-    String id;
-    double weight; // distance
+    private Node start;
+    private Node end;
+    private String id;
+    private double weight;
 
-    public Node getNode1() {
-        return node1;
+    public Edge(Node start, Node end, String id) {
+        this.start = start;
+        this.end = end;
+        this.id = id;
+        this.weight = haversine(start.getLatitude(), start.getLongitude(), end.getLatitude(), end.getLongitude());
     }
 
-    public void setNode1(Node node1) {
-        this.node1 = node1;
+    public Node getStart() {
+        return this.start;
     }
 
-    public Node getNode2() {
-        return node2;
+    public void setStart(Node start) {
+        this.start = start;
     }
 
-    public void setNode2(Node node2) {
-        this.node2 = node2;
+    public Node getEnd() {
+        return this.end;
+    }
+
+    public void setEnd(Node end) {
+        this.end = end;
     }
 
     public String getID() {
         return this.id;
     }
 
-    public double getWeight(){
+    public double getWeight() {
         return this.weight;
     }
 
-    double haversine(double latitude1, double longitude1, double latitude2, double longitude2) {
+    private double haversine(double latitude1, double longitude1, double latitude2, double longitude2) {
         double d;
         double radius = 3958.756; // earth radius in miles
         latitude1 = Math.toRadians(latitude1);
@@ -44,11 +52,4 @@ public class Edge {
         return d;
     }
 
-    public Edge(Node o, Node t, String id) {
-        this.node1 = o;
-        this.node2 = t;
-        this.id = id;
-        double w = haversine(node1.getLatitude(), node1.getLongitude(), node2.getLatitude(), node2.getLongitude());
-        this.weight = w;
-    }
 }
