@@ -9,7 +9,7 @@
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}",
-            "args": ["ur.txt"
+            "args": ["ur.txt", "--show", "--directions",  "TIERNAN-COMMON", "HOEING"
 
             ]
         },

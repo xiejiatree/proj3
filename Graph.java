@@ -183,14 +183,16 @@ public class Graph {
                 }
 
                 Collections.reverse(path);
-                System.out.println("Path: " + path);
-                System.out.println("Total weight: " + totalWeight);
+                for(Node n: path){
+                    System.out.print(n.getID()+ " ");
+                }
+                System.out.println("Distance travelled: " + totalWeight + " miles");
                 return;
             }
 
             if (!visited.get(curr)) {
                 visited.put(curr, true);
-
+                //edge relaxation. 
                 for (Node neighbor : graph.getAdjacentNodes(curr)) {
                     double edgeWeight = graph.getWeight(curr, neighbor);
                     double alt = distance.get(curr) + edgeWeight;
