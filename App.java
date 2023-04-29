@@ -54,54 +54,79 @@ public class App {
     }
 
     private class ZoomableJPanel extends JPanel
-            implements MouseWheelListener, MouseListener, MouseMotionListener, ComponentListener {
+            implements MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
 
         /*
-         * A JPanel that can be zoomed in and out and dragged around.
+         * A JPanel that contains a graph that can be zoomed and translated.
          */
 
-        private double scale;
-        private int translateX;
-        private int translateY;
-        private Point lastMousePoint;
-        private List<Node> nodes;
-        private List<Edge> edges;
-        private double offsetX;
-        private double offsetY;
-        private double scaleX;
-        private double scaleY;
-        private double scaleFactor = 100000;
+        private int translateX; // The x coordinate of the translation. Used for dragging.
+        private int translateY; // The y coordinate of the translation. Used for dragging.
+        private Point lastMousePoint; // The last mouse point. Used for dragging.
+
+        private double zoomScale; // The zoom scale. Used for zooming using the mouse wheel.
+
+        private double offsetX; // The smallest x coordinate of the graph. Used for scaling. Smallest coordinate
+                                // is the origin.
+        private double offsetY; // The smallest y coordinate of the graph. Used for scaling. Smallest coordinate
+                                // is the origin.
+
+        private double scaleX; // The x scale factor. Used for scaling the window.
+        private double scaleY; // The y scale factor. Used for scaling the window.
+
+        private double coordinateMultiplier = 100000; // Used for scaling up the coordinate numbers. Java Swing doesn't
+                                                      // support floating point coordinates. As such, the coordinates
+                                                      // are multiplied by this number to make them integers.
+        private int width = 800;
+        private int height = 572;
+
+        private List<Node> nodes; // The nodes of the graph.
+        private List<Edge> edges; // The edges of the graph
 
         public ZoomableJPanel(Graph graph) {
-            this.scale = 1.0;
             this.translateX = 0;
             this.translateY = 0;
-            this.scaleX = 1.0;
-            this.scaleY = 1.0;
-
             this.lastMousePoint = null;
 
-            this.nodes = graph.getNodes();
-            this.edges = graph.getEdges();
-
-            addMouseWheelListener(this);
-            addMouseListener(this);
-            addMouseMotionListener(this);
+            this.zoomScale = 1;
 
             this.offsetX = graph.getSmallestx();
             this.offsetY = graph.getSmallesty();
 
+            this.scaleX = 1.0;
+            this.scaleY = 1.0;
+
+            this.nodes = graph.getNodes();
+            this.edges = graph.getEdges();
+
+            addMouseListener(this);
+            addMouseWheelListener(this);
+            addMouseMotionListener(this);
+            addComponentListener(this);
+
             setBackground(new Color(102, 204, 102));
         }
+
+        // DRAWING METHODS
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
-
             AffineTransform at = new AffineTransform();
-            at.translate(translateX, translateY);
-            at.scale(scale * scaleX, scale * scaleY);
+
+            double centerX = getWidth() / 2.0;
+            double centerY = getHeight() / 2.0;
+            at.translate(centerX, centerY);
+            at.rotate(3 * Math.PI / 2);
+            at.translate(-centerX, -centerY);
+
+            at.translate(-translateY, translateX); // translateX and translateY are switched because the graph is
+                                                   // rotated 270 degrees. X is also negated because of
+                                                   // the way the coordinate system works.
+            at.scale(zoomScale * scaleY, zoomScale * scaleX); // scaleX and scaleY are switched because the graph is
+                                                              // rotated 270 degrees
+
             g2d.setTransform(at);
 
             for (Node node : nodes) {
@@ -118,8 +143,8 @@ public class App {
             int nodeRadius = 5;
             g2d.setColor(new Color(245, 245, 245));
 
-            int x = (int) ((node.getLatitude() - offsetX) * scaleFactor);
-            int y = (int) ((node.getLongitude() - offsetY) * scaleFactor);
+            int x = (int) ((node.getLatitude() - offsetX) * coordinateMultiplier);
+            int y = (int) ((node.getLongitude() - offsetY) * coordinateMultiplier);
 
             g2d.fillOval(x - nodeRadius, y - nodeRadius, 2 * nodeRadius, 2 * nodeRadius);
 
@@ -129,14 +154,16 @@ public class App {
             g2d.setColor(new Color(245, 245, 245));
             g2d.setStroke(new BasicStroke(2));
 
-            int x1 = (int) ((edge.getNode1().getLatitude() - offsetX) * scaleFactor);
-            int y1 = (int) ((edge.getNode1().getLongitude() - offsetY) * scaleFactor);
-            int x2 = (int) ((edge.getNode2().getLatitude() - offsetX) * scaleFactor);
-            int y2 = (int) ((edge.getNode2().getLongitude() - offsetY) * scaleFactor);
+            int x1 = (int) ((edge.getNode1().getLatitude() - offsetX) * coordinateMultiplier);
+            int y1 = (int) ((edge.getNode1().getLongitude() - offsetY) * coordinateMultiplier);
+            int x2 = (int) ((edge.getNode2().getLatitude() - offsetX) * coordinateMultiplier);
+            int y2 = (int) ((edge.getNode2().getLongitude() - offsetY) * coordinateMultiplier);
 
             g2d.drawLine(x1, y1, x2, y2);
 
         }
+
+        // ZOOMING METHODS
 
         @Override
         public void mouseWheelMoved(MouseWheelEvent e) {
@@ -145,12 +172,12 @@ public class App {
              */
 
             int notches = e.getWheelRotation();
-            double scaleFactor = 1.1;
+            double zoomFactor = 1.1;
 
             if (notches < 0) {
-                scale *= scaleFactor;
+                zoomScale *= zoomFactor;
             } else {
-                scale /= scaleFactor;
+                zoomScale /= zoomFactor;
             }
             repaint();
         }
@@ -165,6 +192,8 @@ public class App {
                 lastMousePoint = e.getPoint();
             }
         }
+
+        // DRAGGING METHODS
 
         @Override
         public void mouseDragged(MouseEvent e) {
@@ -199,6 +228,19 @@ public class App {
             }
         }
 
+        // SCALING METHODS
+
+        @Override
+        public void componentResized(ComponentEvent e) {
+            int newWidth = e.getComponent().getWidth();
+            int newHeight = e.getComponent().getHeight();
+
+            scaleX *= (double) newWidth / width;
+            scaleY *= (double) newHeight / height;
+
+            repaint();
+        }
+
         @Override
         public void mouseClicked(MouseEvent e) {
         }
@@ -213,19 +255,6 @@ public class App {
 
         @Override
         public void mouseMoved(MouseEvent e) {
-        }
-
-        @Override
-        public void componentResized(ComponentEvent e) {
-            int oldWidth = getWidth();
-            int oldHeight = getHeight();
-            int newWidth = e.getComponent().getWidth();
-            int newHeight = e.getComponent().getHeight();
-
-            scaleX *= (double) newWidth / oldWidth;
-            scaleY *= (double) newHeight / oldHeight;
-
-            repaint();
         }
 
         @Override
