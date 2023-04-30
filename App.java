@@ -12,10 +12,12 @@ public class App {
     private int windowWidth;
     private String windowTitle;
     private Graph graph;
+    private List<Node> path;
 
-    public App(String configPath, Graph graph) {
+    public App(String configPath, Graph graph, List<Node> path) {
         loadSettings(configPath);
         this.graph = graph;
+        this.path = path;
     }
 
     private void loadSettings(String configPath) {
@@ -46,7 +48,7 @@ public class App {
         frame.setSize(windowWidth, windowHeight);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        ZoomableJPanel panel = new ZoomableJPanel(graph);
+        ZoomableJPanel panel = new ZoomableJPanel(graph, path);
         frame.add(panel);
 
         frame.setVisible(true);
@@ -81,9 +83,11 @@ public class App {
         private int height = 572;
 
         private List<Node> nodes; // The nodes of the graph.
-        private List<Edge> edges; // The edges of the graph
+        private List<Edge> edges; // The edges of the graph.
 
-        public ZoomableJPanel(Graph graph) {
+        private List<Node> path; // The path to be drawn. If null, no path is drawn.
+
+        public ZoomableJPanel(Graph graph, List<Node> path) {
             graphSpecificSettings(graph.getFileName());
             this.lastMousePoint = null;
 
@@ -95,6 +99,8 @@ public class App {
 
             this.nodes = graph.getNodes();
             this.edges = graph.getEdges();
+
+            this.path = path;
 
             addMouseListener(this);
             addMouseWheelListener(this);
@@ -168,7 +174,15 @@ public class App {
 
         private void drawNode(Graphics2D g2d, Node node) {
             int nodeRadius = 5;
-            g2d.setColor(new Color(245, 245, 245));
+            if (path != null) {
+                if (path.contains(node)) {
+                    g2d.setColor(new Color(0, 0, 0));
+                } else {
+                    g2d.setColor(new Color(245, 245, 245));
+                }
+            } else {
+                g2d.setColor(new Color(245, 245, 245));
+            }
 
             int x = (int) ((node.getLatitude() - offsetX) * coordinateMultiplier);
             int y = (int) ((node.getLongitude() - offsetY) * coordinateMultiplier);
@@ -178,13 +192,29 @@ public class App {
         }
 
         private void drawEdge(Graphics2D g2d, Edge edge) {
-            g2d.setColor(new Color(245, 245, 245));
-            g2d.setStroke(new BasicStroke(2));
 
-            int x1 = (int) ((edge.getStart().getLatitude() - offsetX) * coordinateMultiplier);
-            int y1 = (int) ((edge.getStart().getLongitude() - offsetY) * coordinateMultiplier);
-            int x2 = (int) ((edge.getEnd().getLatitude() - offsetX) * coordinateMultiplier);
-            int y2 = (int) ((edge.getEnd().getLongitude() - offsetY) * coordinateMultiplier);
+            Node startingNode = edge.getStart();
+            Node endingNode = edge.getEnd();
+
+            if (path != null) {
+                if (path.contains(startingNode) && path.contains(endingNode)) {
+                    g2d.setColor(new Color(0, 0, 0));
+                    g2d.setStroke(new BasicStroke(5));
+                }
+
+                else {
+                    g2d.setColor(new Color(245, 245, 245));
+                    g2d.setStroke(new BasicStroke(2));
+                }
+            } else {
+                g2d.setColor(new Color(245, 245, 245));
+                g2d.setStroke(new BasicStroke(2));
+            }
+
+            int x1 = (int) ((startingNode.getLatitude() - offsetX) * coordinateMultiplier);
+            int y1 = (int) ((startingNode.getLongitude() - offsetY) * coordinateMultiplier);
+            int x2 = (int) ((endingNode.getLatitude() - offsetX) * coordinateMultiplier);
+            int y2 = (int) ((endingNode.getLongitude() - offsetY) * coordinateMultiplier);
 
             g2d.drawLine(x1, y1, x2, y2);
 

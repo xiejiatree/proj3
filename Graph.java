@@ -13,12 +13,13 @@ public class Graph {
     public Graph(String fileName) {
         this.fileName = fileName;
 
-        Map<String, Node> nodes = new HashMap<>();
-        List<Edge> edges = new ArrayList<>();
-        adjNodes = new HashMap<>();
+        nodes = new ArrayList<>();
+        edges = new ArrayList<>();
+        adjNodes = new HashMap<Node, List<Node>>();
 
         try {
             // Process nodes
+
             try (Stream<String> nodeLines = Files.lines(Paths.get(fileName))) {
                 nodeLines.filter(line -> line.startsWith("i"))
                         .forEach(line -> {
@@ -27,7 +28,7 @@ public class Graph {
                             double latitude = Double.parseDouble(data[2]);
                             double longitude = Double.parseDouble(data[3]);
                             Node node = new Node(id, latitude, longitude);
-                            nodes.put(id, node);
+                            nodes.add(node);
                         });
             }
 
@@ -40,8 +41,8 @@ public class Graph {
                             String startNodeId = data[2];
                             String endNodeId = data[3];
 
-                            Node startNode = nodes.get(startNodeId);
-                            Node endNode = nodes.get(endNodeId);
+                            Node startNode = getNodeById(startNodeId);
+                            Node endNode = getNodeById(endNodeId);
 
                             if (startNode != null && endNode != null) {
                                 Edge edge = new Edge(startNode, endNode, id);
@@ -49,13 +50,24 @@ public class Graph {
                             }
                         });
             }
+            // add all nodes to the graph
+
+            for (Node node : nodes) {
+                System.out.println("adding node");
+                adjNodes.put(node, new ArrayList<>());
+            }
+            // add all adjacent nodes
+            for (Edge edge : edges) {
+                System.out.println("adding edge");
+                Node node1 = edge.getStart();
+                Node node2 = edge.getEnd();
+
+                adjNodes.get(node1).add(node2);
+                adjNodes.get(node2).add(node1);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        this.nodes = new ArrayList<>(nodes.values());
-        this.edges = edges;
-
     }
 
     public Node getNodeById(String id) {
@@ -119,7 +131,7 @@ public class Graph {
         return null;
     }
 
-    public void dijkstra(Graph graph, Node source, Node destination) {
+    public List<Node> dijkstra(Graph graph, Node source, Node destination) {
         Map<Node, Double> distance = new HashMap<>();
         Map<Node, Node> previous = new HashMap<>();
         Map<Node, Boolean> visited = new HashMap<>();
@@ -162,7 +174,7 @@ public class Graph {
                     System.out.print(n.getID() + " ");
                 }
                 System.out.println("Distance travelled: " + totalWeight + " miles");
-                return;
+                return path;
             }
 
             if (!visited.get(curr)) {
@@ -182,6 +194,7 @@ public class Graph {
         }
 
         System.out.println("No path found from " + source + " to " + destination);
+        return null;
     }
 
 }
