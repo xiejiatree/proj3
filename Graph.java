@@ -1,89 +1,96 @@
 import java.io.*;
 import java.util.*;
 import java.nio.file.*;
-import java.util.stream.*;
 
 public class Graph {
 
+    /* Implementation of Graph. */
+
     private Map<Node, List<Node>> adjNodes;
     private List<Edge> edges;
-    private List<Node> nodes;
-    private String fileName;
+    private Map<String, Node> nodes;
+    private String fileName; // name of the file from which the graph was created. Used in App.java for
+                             // setting specific properties of window.
 
     public Graph(String fileName) {
+
+        /*
+         * Graph can be instantiated only from a given textfile.
+         * Reads the textfile line by line and creates nodes and edges.
+         */
+
         this.fileName = fileName;
 
-        nodes = new ArrayList<>();
+        nodes = new HashMap<>();
         edges = new ArrayList<>();
-        adjNodes = new HashMap<Node, List<Node>>();
+        adjNodes = new HashMap<>();
 
-        try {
-            // Process nodes
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("i")) {
+                    int tab1 = line.indexOf('\t');
+                    int tab2 = line.indexOf('\t', tab1 + 1);
+                    int tab3 = line.indexOf('\t', tab2 + 1);
 
-            try (Stream<String> nodeLines = Files.lines(Paths.get(fileName))) {
-                nodeLines.filter(line -> line.startsWith("i"))
-                        .forEach(line -> {
-                            String[] data = line.split("\t");
-                            String id = data[1];
-                            double latitude = Double.parseDouble(data[2]);
-                            double longitude = Double.parseDouble(data[3]);
-                            Node node = new Node(id, latitude, longitude);
-                            nodes.add(node);
-                        });
+                    String id = line.substring(tab1 + 1, tab2);
+                    double latitude = Double.parseDouble(line.substring(tab2 + 1, tab3));
+                    double longitude = Double.parseDouble(line.substring(tab3 + 1));
+
+                    Node node = new Node(id, latitude, longitude);
+                    nodes.put(id, node);
+
+                } else if (line.startsWith("r")) {
+                    int tab1 = line.indexOf('\t');
+                    int tab2 = line.indexOf('\t', tab1 + 1);
+                    int tab3 = line.indexOf('\t', tab2 + 1);
+
+                    String id = line.substring(tab1 + 1, tab2);
+                    String startNodeId = line.substring(tab2 + 1, tab3);
+                    String endNodeId = line.substring(tab3 + 1);
+
+                    Node startNode = nodes.get(startNodeId);
+                    Node endNode = nodes.get(endNodeId);
+
+                    if (startNode != null && endNode != null) {
+                        Edge edge = new Edge(startNode, endNode, id);
+                        edges.add(edge);
+                    }
+                }
             }
 
-            // Process edges
-            try (Stream<String> edgeLines = Files.lines(Paths.get(fileName))) {
-                edgeLines.filter(line -> line.startsWith("r"))
-                        .forEach(line -> {
-                            String[] data = line.split("\t");
-                            String id = data[1];
-                            String startNodeId = data[2];
-                            String endNodeId = data[3];
-
-                            Node startNode = getNodeById(startNodeId);
-                            Node endNode = getNodeById(endNodeId);
-
-                            if (startNode != null && endNode != null) {
-                                Edge edge = new Edge(startNode, endNode, id);
-                                edges.add(edge);
-                            }
-                        });
-            }
-            // add all nodes to the graph
-
-            for (Node node : nodes) {
-                System.out.println("adding node");
+            for (Node node : nodes.values()) {
                 adjNodes.put(node, new ArrayList<>());
             }
-            // add all adjacent nodes
+
             for (Edge edge : edges) {
-                System.out.println("adding edge");
                 Node node1 = edge.getStart();
                 Node node2 = edge.getEnd();
 
                 adjNodes.get(node1).add(node2);
                 adjNodes.get(node2).add(node1);
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public Node getNodeById(String id) {
-        for (Node node : nodes) {
-            if (node.getID().equals(id)) {
-                return node;
-            }
-        }
-        System.out.println("NO NODE OF THIS NAME EXISTS");
-        return null;
 
+        /* Used in Dijkstra invocation in CommandLine to get start and end nodes. */
+
+        return nodes.get(id);
     }
 
     public double getSmallestX() {
-        double min = nodes.get(0).getLatitude();
-        for (Node n : nodes) {
+        /*
+         * Used for finding origin from which all other nodes and edges are mapped. More
+         * in App.java
+         */
+
+        double min = Double.POSITIVE_INFINITY;
+        for (Node n : nodes.values()) {
             if (n.getLatitude() < min) {
                 min = n.getLatitude();
             }
@@ -92,8 +99,12 @@ public class Graph {
     }
 
     public double getSmallestY() {
-        double min = nodes.get(0).getLongitude();
-        for (Node n : nodes) {
+        /*
+         * Used for finding origin from which all other nodes and edges are mapped. More
+         * in App.java
+         */
+        double min = Double.POSITIVE_INFINITY;
+        for (Node n : nodes.values()) {
             if (n.getLongitude() < min) {
                 min = n.getLongitude();
             }
@@ -110,7 +121,7 @@ public class Graph {
     }
 
     public List<Node> getNodes() {
-        return nodes;
+        return new ArrayList<>(nodes.values());
     }
 
     public String getFileName() {
@@ -132,10 +143,21 @@ public class Graph {
     }
 
     public List<Node> dijkstra(Graph graph, Node source, Node destination) {
-        Map<Node, Double> distance = new HashMap<>();
-        Map<Node, Node> previous = new HashMap<>();
-        Map<Node, Boolean> visited = new HashMap<>();
-        PriorityQueue<Node> pq = new PriorityQueue<>(Comparator.comparingDouble(distance::get));
+
+        /*
+         * Implementation of lazy Dijkstra's algorithm to save space. Saves storage
+         * space, instead of storing all nodes in
+         * the queue initially, only the closest node and its neighbors are stored.
+         */
+
+        Map<Node, Double> distance = new HashMap<>(); // Standard for Dijkstra's algorithm. Stores all known distances
+                                                      // from source.
+        Map<Node, Node> previous = new HashMap<>(); // Saves the route, periodically updated if a more optimal route is
+                                                    // found
+        Map<Node, Boolean> visited = new HashMap<>(); // Visited nodes to prevent revisiting.
+        PriorityQueue<Node> pq = new PriorityQueue<>(Comparator.comparingDouble(distance::get)); // Extract the closest
+                                                                                                 // node during each
+                                                                                                 // iteration
 
         // Initialize all distances to infinity and visited to false
         for (Node node : graph.getNodes()) {
@@ -150,9 +172,11 @@ public class Graph {
         pq.offer(source);
 
         while (!pq.isEmpty()) {
+            // Initially the source node is polled, afterwards the closest sequential node
+            // is polled. Saves storage space.
             Node curr = pq.poll();
 
-            // If destination is reached, print path and return
+            // If destination is reached, print path and return.
             if (curr == destination) {
                 List<Node> path = new ArrayList<>();
                 Node temp = destination;
@@ -186,6 +210,8 @@ public class Graph {
 
                     if (alt < distance.get(neighbor)) {
                         distance.put(neighbor, alt);
+                        // update the current route if the path through the new neighbor is more
+                        // optimal.
                         previous.put(neighbor, curr);
                         pq.offer(neighbor);
                     }

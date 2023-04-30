@@ -4,6 +4,12 @@ public class Node {
     private double longitude;
 
     public Node(String id, double latitude, double longitude) {
+
+        /*
+         * Generic Implementation of Node class.
+         * It is public because it used in App.java.
+         */
+
         this.id = id;
         this.latitude = latitude;
         this.longitude = longitude;

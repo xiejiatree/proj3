@@ -7,6 +7,13 @@ public class Edge {
     private double weight;
 
     public Edge(Node start, Node end, String id) {
+
+        /*
+         * Generic Implementation of Edge class.
+         * It is public because it used in App.java.
+         * Weight is calculated on instantiation.
+         */
+
         this.start = start;
         this.end = end;
         this.id = id;
@@ -38,6 +45,11 @@ public class Edge {
     }
 
     private double haversine(double latitude1, double longitude1, double latitude2, double longitude2) {
+        /*
+         * An algorithm to calculate the weight of the edge, that is distance between
+         * two intersections.
+         */
+
         double d;
         double radius = 3958.756; // earth radius in miles
         latitude1 = Math.toRadians(latitude1);

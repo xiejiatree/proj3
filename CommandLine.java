@@ -3,7 +3,16 @@ import javax.swing.SwingUtilities;
 import java.util.List;
 
 public class CommandLine {
+
+    /* The class that is responsible for interacting with user in the terminal. */
+
     public static void UserInteraction(String[] args) throws IOException {
+        /*
+         * This method is responsible for interacting with the user in the terminal.
+         * If Dijkstra's algorithm is to be run, then it might take some time before
+         * GUI is shown.
+         */
+
         boolean show = false;
         boolean directions = false;
         List<Node> path = null;

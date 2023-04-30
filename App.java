@@ -8,6 +8,10 @@ import java.util.Properties;
 import java.util.List;
 
 public class App {
+    /*
+     * Main class for GUI. Creates an empty window.
+     */
+
     private int windowHeight;
     private int windowWidth;
     private String windowTitle;
@@ -48,14 +52,14 @@ public class App {
         frame.setSize(windowWidth, windowHeight);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        ZoomableJPanel panel = new ZoomableJPanel(graph, path);
+        DrawingPanel panel = new DrawingPanel(graph, path);
         frame.add(panel);
 
         frame.setVisible(true);
 
     }
 
-    private class ZoomableJPanel extends JPanel
+    private class DrawingPanel extends JPanel
             implements MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
 
         /*
@@ -79,7 +83,8 @@ public class App {
         private double coordinateMultiplier = 100000; // Used for scaling up the coordinate numbers. Java Swing doesn't
                                                       // support floating point coordinates. As such, the coordinates
                                                       // are multiplied by this number to make them integers.
-        private int width = 800;
+        private int width = 800; // Those values are hardcoded. We planned on user being able to set size window
+                                 // in config file but due to lack of time abandoned this idea.
         private int height = 572;
 
         private List<Node> nodes; // The nodes of the graph.
@@ -87,7 +92,7 @@ public class App {
 
         private List<Node> path; // The path to be drawn. If null, no path is drawn.
 
-        public ZoomableJPanel(Graph graph, List<Node> path) {
+        public DrawingPanel(Graph graph, List<Node> path) {
             graphSpecificSettings(graph.getFileName());
             this.lastMousePoint = null;
 
@@ -146,21 +151,27 @@ public class App {
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
-            AffineTransform at = new AffineTransform();
+            AffineTransform affineTransform = new AffineTransform();
+
+            // When graph is drawn without the following code snippet, it is rotated 270
+            // degrees.
+            // This code snippet rotates it back.
 
             double centerX = getWidth() / 2.0;
             double centerY = getHeight() / 2.0;
-            at.translate(centerX, centerY);
-            at.rotate(3 * Math.PI / 2);
-            at.translate(-centerX, -centerY);
+            affineTransform.translate(centerX, centerY);
+            affineTransform.rotate(3 * Math.PI / 2);
+            affineTransform.translate(-centerX, -centerY);
 
-            at.translate(-translateY, translateX); // translateX and translateY are switched because the graph is
-                                                   // rotated 270 degrees. X is also negated because of
-                                                   // the way the coordinate system works.
-            at.scale(zoomScale * scaleY, zoomScale * scaleX); // scaleX and scaleY are switched because the graph is
-                                                              // rotated 270 degrees
+            affineTransform.translate(-translateY, translateX); // translateX and translateY are switched because the
+                                                                // graph is
+            // rotated 270 degrees. X is also negated because of
+            // the way the coordinate system works.
+            affineTransform.scale(zoomScale * scaleY, zoomScale * scaleX); // scaleX and scaleY are switched because the
+                                                                           // graph is
+            // rotated 270 degrees
 
-            g2d.setTransform(at);
+            g2d.setTransform(affineTransform);
 
             for (Node node : nodes) {
                 drawNode(g2d, node);
@@ -173,6 +184,12 @@ public class App {
         }
 
         private void drawNode(Graphics2D g2d, Node node) {
+
+            /*
+             * A method to draw Nodes. Changes color and stroke based on whether Dijkstra
+             * was invoked.
+             */
+
             int nodeRadius = 5;
             if (path != null) {
                 if (path.contains(node)) {
@@ -192,6 +209,11 @@ public class App {
         }
 
         private void drawEdge(Graphics2D g2d, Edge edge) {
+
+            /*
+             * A method to draw Edges. Changes color and stroke based on whether Dijkstra
+             * was invoked.
+             */
 
             Node startingNode = edge.getStart();
             Node endingNode = edge.getEnd();
@@ -297,6 +319,8 @@ public class App {
 
             repaint();
         }
+
+        /* Unnecessary interface methods */
 
         @Override
         public void mouseClicked(MouseEvent e) {
